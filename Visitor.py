@@ -1,5 +1,5 @@
 import operator
-ops = {'+' : operator.add, '-' : operator.sub, '*' : operator.mul, '/' : operator.truediv, '^' : operator.pow}
+ops = {'+' : operator.add, '-' : operator.sub, '*' : operator.mul, '/' : operator.truediv, '^' : operator.pow, '%': operator.mod}
 
 if "name" is not None and "." in "name":
     from .ExprParser import ExprParser
@@ -17,15 +17,20 @@ class Visitor(ExprVisitor):
         l = list(ctx.getChildren())
         for i in range(len(l)-1):
             result = self.visit(l[i])
-            if result is not None: 
+            if result is not None:
                 print(result)
     
-    def visitExpr(self,ctx):
+    def visitExpr(self, ctx):
         l = list(ctx.getChildren())
         if len(l) == 1:
             if l[0].getText() in self.myvars:
                 return self.myvars[l[0].getText()]
-            return int(l[0].getText())
+            if ctx.getChild(0).getSymbol().type == ExprParser.NUM:
+                return int(l[0].getText())
+            elif ctx.getChild(0).getSymbol().type == ExprParser.STRING:
+                return l[0].getText().strip('"')
+            else:
+                return l[0].getText()
         else:
             left = self.visit(l[0])
             right = self.visit(l[2])
@@ -91,11 +96,14 @@ class Visitor(ExprVisitor):
 
             return None
         elif l[0].getText() == 'print':  # Impresión
-            if l[1].getText() in self.myvars:
-                value = self.myvars[l[1].getText()]
-                print(value)
-                return None
-            else:
-                return 'ERROR: Variable no definida'
+                if l[1].getText().startswith('"') and l[1].getText().endswith('"'):
+                    print(l[1].getText().strip('"'))
+                    return None
+                elif l[1].getText() in self.myvars:
+                    value = self.myvars[l[1].getText()]
+                    print(value)
+                    return None
+                else:
+                    return 'ERROR: Variable no definida o texto no válido'
         else:
             return 'ERROR: Acción desconocida'
